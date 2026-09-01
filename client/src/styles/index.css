@@ -1775,3 +1775,327 @@ a {
     padding: 1.2rem;
   }
 }
+
+/* =========================================
+   ADMIN PANEL
+========================================= */
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 24px;
+
+  padding: 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  background: #ffffff;
+}
+
+.admin-item-card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.admin-item-card p {
+  margin: 7px 0;
+}
+
+.admin-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  margin: 20px 0;
+}
+
+.filter-bar input,
+.filter-bar select {
+  min-width: 200px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  font-size: 14px;
+}
+
+.empty-state {
+  padding: 40px 20px;
+
+  text-align: center;
+
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+
+  .admin-item-card {
+    flex-direction: column;
+  }
+
+  .admin-user-actions {
+    width: 100%;
+  }
+
+  .admin-user-actions button {
+    width: 100%;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    width: 100%;
+  }
+
+}
+/* ===============================
+   ADMIN LAYOUT
+================================ */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 260px;
+  min-height: 100vh;
+  padding: 24px 16px;
+  background: #1f2937;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-sidebar-brand {
+  margin-bottom: 40px;
+}
+
+.admin-sidebar-brand h2 {
+  margin: 0;
+}
+
+.admin-sidebar-brand span {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-nav-link {
+  padding: 12px 14px;
+
+  border-radius: 8px;
+
+  color: #d1d5db;
+
+  text-decoration: none;
+
+  display: flex;
+
+  gap: 12px;
+
+  align-items: center;
+}
+
+.admin-nav-link:hover {
+  background: #374151;
+}
+
+.admin-nav-link.active {
+  background: #4f46e5;
+
+  color: white;
+}
+
+.admin-nav-icon {
+  font-size: 18px;
+}
+
+.admin-sidebar-footer {
+  margin-top: auto;
+}
+
+.admin-sidebar-user {
+  padding: 16px 0;
+
+  display: flex;
+
+  flex-direction: column;
+}
+
+.admin-sidebar-user span {
+  font-size: 13px;
+
+  opacity: 0.7;
+}
+
+.admin-logout-btn {
+  width: 100%;
+
+  padding: 10px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+.admin-main-content {
+  flex: 1;
+
+  min-width: 0;
+
+  background: #f8fafc;
+}
+
+/* ===============================
+   CHARTS
+================================ */
+
+.admin-charts-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(350px, 1fr)
+    );
+
+  gap: 24px;
+
+  margin-top: 24px;
+}
+
+.admin-chart-card {
+  background: white;
+
+  padding: 24px;
+
+  border-radius: 12px;
+}
+
+/* ===============================
+   MODAL
+================================ */
+
+.modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(
+      0,
+      0,
+      0,
+      0.5
+    );
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  z-index: 1000;
+}
+
+.confirm-modal {
+  width: 100%;
+
+  max-width: 450px;
+
+  background: white;
+
+  border-radius: 12px;
+
+  padding: 24px;
+}
+
+.confirm-modal-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 12px;
+
+  margin-top: 24px;
+}
+
+/* ===============================
+   PAGINATION
+================================ */
+
+.pagination {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 30px;
+}
+
+.pagination button {
+  min-width: 40px;
+
+  padding: 8px 12px;
+
+  border-radius: 6px;
+
+  border: 1px solid #ddd;
+
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background: #4f46e5;
+
+  color: white;
+}
+
+/* ===============================
+   ANALYTICS
+================================ */
+
+.analytics-section {
+  margin-top: 32px;
+}
+
+.analytics-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(200px, 1fr)
+    );
+
+  gap: 20px;
+}

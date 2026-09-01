@@ -1,55 +1,50 @@
-const express =
-  require("express");
+const express = require("express");
 
 const {
   protect,
   requireRole,
-} =
-  require("../middleware/authMiddleware");
+} = require("../middleware/authMiddleware");
 
 const {
   getAdminDashboard,
 
+  // Users
   getAllUsers,
   getUserById,
   updateUserStatus,
   updateUserRole,
 
+  // Jobs
   getAllJobs,
   deleteJob,
 
+  // Opportunities
   getAllOpportunities,
   deleteOpportunity,
 
+  // Events
   getAllEvents,
   deleteEvent,
-} =
-  require(
-    "../controllers/adminController"
-  );
+} = require(
+  "../controllers/adminController"
+);
 
 // =====================================================
 // ROUTER
 // =====================================================
 
-const router =
-  express.Router();
+const router = express.Router();
 
 // =====================================================
 // ADMIN AUTHORIZATION
 // =====================================================
 
 // Every route below requires authentication
-// and the admin role.
+router.use(protect);
 
+// Every route below requires admin role
 router.use(
-  protect
-);
-
-router.use(
-  requireRole(
-    "admin"
-  )
+  requireRole("admin")
 );
 
 // =====================================================
@@ -68,6 +63,12 @@ router.get(
 // =====================================================
 
 // GET /api/admin/users
+// Query:
+// ?page=1
+// ?limit=20
+// ?search=name
+// ?role=student
+// ?isActive=true
 
 router.get(
   "/users",
@@ -100,6 +101,10 @@ router.put(
 // =====================================================
 
 // GET /api/admin/jobs
+// Query:
+// ?page=1
+// ?limit=20
+// ?status=active
 
 router.get(
   "/jobs",
@@ -118,6 +123,10 @@ router.delete(
 // =====================================================
 
 // GET /api/admin/opportunities
+// Query:
+// ?page=1
+// ?limit=20
+// ?status=open
 
 router.get(
   "/opportunities",
@@ -136,6 +145,10 @@ router.delete(
 // =====================================================
 
 // GET /api/admin/events
+// Query:
+// ?page=1
+// ?limit=20
+// ?status=published
 
 router.get(
   "/events",
@@ -153,5 +166,4 @@ router.delete(
 // EXPORT
 // =====================================================
 
-module.exports =
-  router;
+module.exports = router;

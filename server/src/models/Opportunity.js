@@ -93,7 +93,8 @@ const opportunitySchema = new mongoose.Schema(
     category: {
       type: String,
       enum: {
-        values: OPPORTUNITY_CATEGORIES,
+        values:
+          OPPORTUNITY_CATEGORIES,
         message:
           "Invalid opportunity category",
       },
@@ -134,7 +135,8 @@ const opportunitySchema = new mongoose.Schema(
     experienceLevel: {
       type: String,
       enum: {
-        values: EXPERIENCE_LEVELS,
+        values:
+          EXPERIENCE_LEVELS,
         message:
           "Invalid experience level",
       },
@@ -234,7 +236,8 @@ const opportunitySchema = new mongoose.Schema(
     // ===============================================
 
     recruiter: {
-      type: mongoose.Schema.Types.ObjectId,
+      type:
+        mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
       index: true,
@@ -261,6 +264,7 @@ const opportunitySchema = new mongoose.Schema(
     isFeatured: {
       type: Boolean,
       default: false,
+      index: true,
     },
 
     // ===============================================
@@ -290,6 +294,29 @@ const opportunitySchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+
+    // ===============================================
+    // SOFT DELETE
+    // ADMIN MANAGEMENT
+    // ===============================================
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    deletedBy: {
+      type:
+        mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -300,35 +327,52 @@ const opportunitySchema = new mongoose.Schema(
 // NORMALIZE STRING ARRAYS
 // =====================================================
 
-const normalizeStringArray = (values) => {
-  if (!Array.isArray(values)) {
+const normalizeStringArray = (
+  values
+) => {
+  if (
+    !Array.isArray(
+      values
+    )
+  ) {
     return [];
   }
 
-  const seen = new Set();
+  const seen =
+    new Set();
 
   return values
-    .map((value) =>
-      typeof value === "string"
-        ? value.trim()
-        : ""
+    .map(
+      (value) =>
+        typeof value ===
+        "string"
+          ? value.trim()
+          : ""
     )
     .filter(
       (value) =>
         value.length > 0
     )
-    .filter((value) => {
-      const normalized =
-        value.toLowerCase();
+    .filter(
+      (value) => {
+        const normalized =
+          value.toLowerCase();
 
-      if (seen.has(normalized)) {
-        return false;
+        if (
+          seen.has(
+            normalized
+          )
+        ) {
+          return false;
+        }
+
+        seen.add(
+          normalized
+        );
+
+        return true;
       }
-
-      seen.add(normalized);
-
-      return true;
-    });
+    );
 };
 
 // =====================================================
@@ -379,26 +423,98 @@ opportunitySchema.pre(
 // INDEXES
 // =====================================================
 
-// Search and filter optimization
+// Active/deleted filtering
+
+opportunitySchema.index({
+  isDeleted: 1,
+  createdAt: -1,
+});
+
+// Status and deadline filtering
 
 opportunitySchema.index({
   status: 1,
   deadline: 1,
 });
 
+// Opportunity filtering
+
 opportunitySchema.index({
   type: 1,
   workMode: 1,
 });
+
+// Recruiter opportunities
 
 opportunitySchema.index({
   recruiter: 1,
   createdAt: -1,
 });
 
+// Skill searching
+
 opportunitySchema.index({
   requiredSkills: 1,
 });
+
+// Admin search optimization
+
+opportunitySchema.index({
+  title: 1,
+  company: 1,
+});
+
+// Category filtering
+
+opportunitySchema.index({
+  category: 1,
+  isDeleted: 1,
+});
+
+// =====================================================
+// INSTANCE METHODS
+// =====================================================
+
+// Soft delete opportunity
+
+opportunitySchema.methods.softDelete =
+  async function (
+    adminId
+  ) {
+    this.isDeleted =
+      true;
+
+    this.deletedAt =
+      new Date();
+
+    this.deletedBy =
+      adminId;
+
+    this.status =
+      "closed";
+
+    await this.save();
+
+    return this;
+  };
+
+// Restore opportunity
+
+opportunitySchema.methods.restore =
+  async function () {
+    this.isDeleted =
+      false;
+
+    this.deletedAt =
+      null;
+
+    this.deletedBy =
+      null;
+
+    await this.save();
+
+    return this;
+  };
 
 // =====================================================
 // STATIC CONSTANTS
@@ -426,4 +542,5 @@ const Opportunity =
     opportunitySchema
   );
 
-module.exports = Opportunity;
+module.exports =
+  Opportunity;

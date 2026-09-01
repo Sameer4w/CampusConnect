@@ -1,4 +1,12 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
+// =====================================================
+// PUBLIC / MAIN PAGES
+// =====================================================
 
 import HomePage from "./pages/HomePage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
@@ -7,31 +15,68 @@ import DashboardPage from "./pages/DashboardPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 
-// Opportunity pages
+// =====================================================
+// ADMIN PAGES
+// =====================================================
+
+import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
+import AdminUsersPage from "./pages/AdminUsersPage.jsx";
+import AdminOpportunitiesPage from "./pages/AdminOpportunitiesPage.jsx";
+import AdminJobsPage from "./pages/AdminJobsPage.jsx";
+import AdminEventsPage from "./pages/AdminEventsPage.jsx";
+
+// =====================================================
+// OPPORTUNITY PAGES
+// =====================================================
+
 import OpportunitiesPage from "./pages/OpportunitiesPage.jsx";
 import OpportunityDetailsPage from "./pages/OpportunityDetailsPage.jsx";
 import EditOpportunityPage from "./pages/EditOpportunityPage.jsx";
 import PostOpportunityPage from "./pages/PostOpportunityPage.jsx";
 import MyOpportunitiesPage from "./pages/MyOpportunitiesPage.jsx";
 
-// Application pages
+// =====================================================
+// APPLICATION PAGES
+// =====================================================
+
 import MyApplicationsPage from "./pages/MyApplicationsPage.jsx";
 import RecruiterApplicationsPage from "./pages/RecruiterApplicationsPage.jsx";
 
-// Layout components
+// =====================================================
+// LAYOUT COMPONENTS
+// =====================================================
+
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 
-// Route protection
+// =====================================================
+// ROUTE PROTECTION
+// =====================================================
+
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
+// =====================================================
+// APP
+// =====================================================
 
 function App() {
   return (
     <div className="app-container">
+
+      {/* =========================
+          NAVBAR
+      ========================== */}
+
       <Navbar />
 
+      {/* =========================
+          MAIN CONTENT
+      ========================== */}
+
       <main className="main-content">
+
         <Routes>
+
           {/* =========================
               PUBLIC ROUTES
           ========================== */}
@@ -52,7 +97,7 @@ function App() {
           />
 
           {/* =========================
-              AUTHENTICATED USER ROUTES
+              AUTHENTICATED ROUTES
           ========================== */}
 
           <Route
@@ -60,6 +105,75 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* =========================
+              ADMIN ROUTES
+          ========================== */}
+
+          {/* Admin Dashboard */}
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+              >
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manage Users */}
+
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+              >
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manage Opportunities */}
+
+          <Route
+            path="/admin/opportunities"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+              >
+                <AdminOpportunitiesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manage Jobs */}
+
+          <Route
+            path="/admin/jobs"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+              >
+                <AdminJobsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manage Events */}
+
+          <Route
+            path="/admin/events"
+            element={
+              <ProtectedRoute
+                allowedRoles={["admin"]}
+              >
+                <AdminEventsPage />
               </ProtectedRoute>
             }
           />
@@ -94,6 +208,8 @@ function App() {
               RECRUITER ROUTES
           ========================== */}
 
+          {/* Edit Opportunity */}
+
           <Route
             path="/opportunities/:id/edit"
             element={
@@ -104,6 +220,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Post Opportunity */}
 
           <Route
             path="/opportunities/post"
@@ -116,6 +234,8 @@ function App() {
             }
           />
 
+          {/* Recruiter's Opportunities */}
+
           <Route
             path="/my-opportunities"
             element={
@@ -126,6 +246,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Recruiter Applications */}
 
           <Route
             path="/recruiter/applications"
@@ -142,6 +264,8 @@ function App() {
               SHARED AUTHENTICATED ROUTES
           ========================== */}
 
+          {/* Opportunities List */}
+
           <Route
             path="/opportunities"
             element={
@@ -150,6 +274,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Opportunity Details */}
 
           <Route
             path="/opportunities/:id"
@@ -182,10 +308,17 @@ function App() {
             path="*"
             element={<NotFoundPage />}
           />
+
         </Routes>
+
       </main>
 
+      {/* =========================
+          FOOTER
+      ========================== */}
+
       <Footer />
+
     </div>
   );
 }

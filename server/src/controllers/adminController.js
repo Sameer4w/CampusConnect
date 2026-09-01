@@ -24,58 +24,57 @@ const Event =
 // =====================================================
 
 const MAX_LIMIT = 100;
+
 const DEFAULT_LIMIT = 20;
 
 // =====================================================
-// HELPERS
+// PAGINATION HELPER
 // =====================================================
 
-const getPagination = (
-  query
-) => {
-  const requestedPage =
-    Number(query.page);
+const getPagination =
+  (query) => {
+    const requestedPage =
+      Number(query.page);
 
-  const requestedLimit =
-    Number(query.limit);
+    const requestedLimit =
+      Number(query.limit);
 
-  const page =
-    Number.isFinite(
-      requestedPage
-    ) &&
-    requestedPage > 0
-      ? Math.floor(
-          requestedPage
-        )
-      : 1;
+    const page =
+      Number.isFinite(
+        requestedPage
+      ) &&
+      requestedPage > 0
+        ? Math.floor(
+            requestedPage
+          )
+        : 1;
 
-  const limit =
-    Number.isFinite(
-      requestedLimit
-    ) &&
-    requestedLimit > 0
-      ? Math.min(
-          Math.floor(
-            requestedLimit
-          ),
-          MAX_LIMIT
-        )
-      : DEFAULT_LIMIT;
+    const limit =
+      Number.isFinite(
+        requestedLimit
+      ) &&
+      requestedLimit > 0
+        ? Math.min(
+            Math.floor(
+              requestedLimit
+            ),
+            MAX_LIMIT
+          )
+        : DEFAULT_LIMIT;
 
-  const skip =
-    (page - 1) *
-    limit;
+    const skip =
+      (page - 1) *
+      limit;
 
-  return {
-    page,
-    limit,
-    skip,
+    return {
+      page,
+      limit,
+      skip,
+    };
   };
-};
 
 // =====================================================
 // ADMIN DASHBOARD
-// ADMIN ONLY
 // =====================================================
 
 const getAdminDashboard =
@@ -84,6 +83,7 @@ const getAdminDashboard =
       req,
       res
     ) => {
+
       const [
         totalUsers,
         totalStudents,
@@ -105,7 +105,11 @@ const getAdminDashboard =
         publishedEvents,
       ] =
         await Promise.all([
-          // Users
+
+          // ===========================================
+          // USERS
+          // ===========================================
+
           User.countDocuments(),
 
           User.countDocuments({
@@ -133,7 +137,10 @@ const getAdminDashboard =
               false,
           }),
 
-          // Jobs
+          // ===========================================
+          // JOBS
+          // ===========================================
+
           Job.countDocuments(),
 
           Job.countDocuments({
@@ -141,21 +148,39 @@ const getAdminDashboard =
               "active",
           }),
 
-          // Opportunities
-          Opportunity.countDocuments(),
+          // ===========================================
+          // OPPORTUNITIES
+          // ===========================================
+
+          Opportunity.countDocuments({
+            isDeleted:
+              false,
+          }),
 
           Opportunity.countDocuments({
             status:
               "open",
+
+            isDeleted:
+              false,
           }),
 
-          // Opportunity applications
+          // ===========================================
+          // OPPORTUNITY APPLICATIONS
+          // ===========================================
+
           Application.countDocuments(),
 
-          // Job applications
+          // ===========================================
+          // JOB APPLICATIONS
+          // ===========================================
+
           JobApplication.countDocuments(),
 
-          // Events
+          // ===========================================
+          // EVENTS
+          // ===========================================
+
           Event.countDocuments(),
 
           Event.countDocuments({
@@ -169,6 +194,7 @@ const getAdminDashboard =
           true,
 
         dashboard: {
+
           users: {
             total:
               totalUsers,
@@ -231,7 +257,6 @@ const getAdminDashboard =
 
 // =====================================================
 // GET ALL USERS
-// ADMIN ONLY
 // =====================================================
 
 const getAllUsers =
@@ -240,6 +265,7 @@ const getAllUsers =
       req,
       res
     ) => {
+
       const {
         page,
         limit,
@@ -251,9 +277,9 @@ const getAllUsers =
 
       const filter = {};
 
-      // -----------------------------------------------
+      // ===============================================
       // FILTER BY ROLE
-      // -----------------------------------------------
+      // ===============================================
 
       if (
         typeof req.query.role ===
@@ -265,6 +291,7 @@ const getAllUsers =
             .toLowerCase();
 
         if (
+          User.ROLES &&
           User.ROLES.includes(
             role
           )
@@ -274,9 +301,9 @@ const getAllUsers =
         }
       }
 
-      // -----------------------------------------------
+      // ===============================================
       // FILTER BY ACTIVE STATUS
-      // -----------------------------------------------
+      // ===============================================
 
       if (
         req.query.isActive ===
@@ -294,31 +321,36 @@ const getAllUsers =
           false;
       }
 
-      // -----------------------------------------------
+      // ===============================================
       // SEARCH
-      // -----------------------------------------------
+      // ===============================================
 
       if (
         typeof req.query.search ===
           "string" &&
         req.query.search.trim()
       ) {
+
         const search =
-          req.query.search.trim();
+          req.query.search
+            .trim();
 
         filter.$or = [
           {
             name: {
               $regex:
                 search,
+
               $options:
                 "i",
             },
           },
+
           {
             email: {
               $regex:
                 search,
+
               $options:
                 "i",
             },
@@ -331,6 +363,7 @@ const getAllUsers =
         total,
       ] =
         await Promise.all([
+
           User.find(
             filter
           )
@@ -375,7 +408,6 @@ const getAllUsers =
 
 // =====================================================
 // GET SINGLE USER
-// ADMIN ONLY
 // =====================================================
 
 const getUserById =
@@ -384,6 +416,7 @@ const getUserById =
       req,
       res
     ) => {
+
       const user =
         await User.findById(
           req.params.id
@@ -392,6 +425,7 @@ const getUserById =
       if (
         !user
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -410,7 +444,6 @@ const getUserById =
 
 // =====================================================
 // UPDATE USER STATUS
-// ADMIN ONLY
 // =====================================================
 
 const updateUserStatus =
@@ -419,19 +452,22 @@ const updateUserStatus =
       req,
       res
     ) => {
+
       const {
         isActive,
       } =
-        req.body || {};
+        req.body ||
+        {};
 
-      // -----------------------------------------------
-      // VALIDATE
-      // -----------------------------------------------
+      // ===============================================
+      // VALIDATION
+      // ===============================================
 
       if (
         typeof isActive !==
         "boolean"
       ) {
+
         res.status(400);
 
         throw new Error(
@@ -447,6 +483,7 @@ const updateUserStatus =
       if (
         !user
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -454,14 +491,15 @@ const updateUserStatus =
         );
       }
 
-      // -----------------------------------------------
-      // PREVENT ADMIN FROM DEACTIVATING SELF
-      // -----------------------------------------------
+      // ===============================================
+      // PREVENT SELF DEACTIVATION
+      // ===============================================
 
       if (
         user._id.toString() ===
         req.user._id.toString()
       ) {
+
         res.status(400);
 
         throw new Error(
@@ -490,7 +528,6 @@ const updateUserStatus =
 
 // =====================================================
 // UPDATE USER ROLE
-// ADMIN ONLY
 // =====================================================
 
 const updateUserRole =
@@ -499,15 +536,18 @@ const updateUserRole =
       req,
       res
     ) => {
+
       const {
         role,
       } =
-        req.body || {};
+        req.body ||
+        {};
 
       if (
         typeof role !==
         "string"
       ) {
+
         res.status(400);
 
         throw new Error(
@@ -521,16 +561,22 @@ const updateUserRole =
           .toLowerCase();
 
       if (
+        !User.ROLES ||
         !User.ROLES.includes(
           normalizedRole
         )
       ) {
+
         res.status(400);
 
         throw new Error(
-          `Role must be one of: ${User.ROLES.join(
-            ", "
-          )}`
+          `Role must be one of: ${
+            User.ROLES
+              ? User.ROLES.join(
+                  ", "
+                )
+              : "student, recruiter, admin"
+          }`
         );
       }
 
@@ -542,6 +588,7 @@ const updateUserRole =
       if (
         !user
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -549,14 +596,15 @@ const updateUserRole =
         );
       }
 
-      // -----------------------------------------------
-      // PREVENT ADMIN FROM CHANGING OWN ROLE
-      // -----------------------------------------------
+      // ===============================================
+      // PREVENT SELF ROLE CHANGE
+      // ===============================================
 
       if (
         user._id.toString() ===
         req.user._id.toString()
       ) {
+
         res.status(400);
 
         throw new Error(
@@ -583,7 +631,6 @@ const updateUserRole =
 
 // =====================================================
 // GET ALL JOBS
-// ADMIN ONLY
 // =====================================================
 
 const getAllJobs =
@@ -592,6 +639,7 @@ const getAllJobs =
       req,
       res
     ) => {
+
       const {
         page,
         limit,
@@ -603,10 +651,16 @@ const getAllJobs =
 
       const filter = {};
 
+      // ===============================================
+      // STATUS FILTER
+      // ===============================================
+
       if (
         typeof req.query.status ===
-        "string"
+          "string" &&
+        req.query.status.trim()
       ) {
+
         filter.status =
           req.query.status
             .trim()
@@ -618,6 +672,7 @@ const getAllJobs =
         total,
       ] =
         await Promise.all([
+
           Job.find(
             filter
           )
@@ -664,7 +719,6 @@ const getAllJobs =
 
 // =====================================================
 // DELETE JOB
-// ADMIN ONLY
 // =====================================================
 
 const deleteJob =
@@ -673,6 +727,7 @@ const deleteJob =
       req,
       res
     ) => {
+
       const job =
         await Job.findById(
           req.params.id
@@ -681,6 +736,7 @@ const deleteJob =
       if (
         !job
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -688,7 +744,7 @@ const deleteJob =
         );
       }
 
-      // Delete related applications
+      // Delete related job applications
 
       await JobApplication.deleteMany({
         job:
@@ -709,7 +765,6 @@ const deleteJob =
 
 // =====================================================
 // GET ALL OPPORTUNITIES
-// ADMIN ONLY
 // =====================================================
 
 const getAllOpportunities =
@@ -718,6 +773,7 @@ const getAllOpportunities =
       req,
       res
     ) => {
+
       const {
         page,
         limit,
@@ -727,16 +783,72 @@ const getAllOpportunities =
           req.query
         );
 
-      const filter = {};
+      const filter = {
+        isDeleted:
+          false,
+      };
+
+      // ===============================================
+      // STATUS FILTER
+      // ===============================================
 
       if (
         typeof req.query.status ===
-        "string"
+          "string" &&
+        req.query.status.trim()
       ) {
+
         filter.status =
           req.query.status
             .trim()
             .toLowerCase();
+      }
+
+      // ===============================================
+      // SEARCH
+      // ===============================================
+
+      if (
+        typeof req.query.search ===
+          "string" &&
+        req.query.search.trim()
+      ) {
+
+        const search =
+          req.query.search
+            .trim();
+
+        filter.$or = [
+          {
+            title: {
+              $regex:
+                search,
+
+              $options:
+                "i",
+            },
+          },
+
+          {
+            organization: {
+              $regex:
+                search,
+
+              $options:
+                "i",
+            },
+          },
+
+          {
+            location: {
+              $regex:
+                search,
+
+              $options:
+                "i",
+            },
+          },
+        ];
       }
 
       const [
@@ -744,6 +856,7 @@ const getAllOpportunities =
         total,
       ] =
         await Promise.all([
+
           Opportunity.find(
             filter
           )
@@ -790,7 +903,6 @@ const getAllOpportunities =
 
 // =====================================================
 // DELETE OPPORTUNITY
-// ADMIN ONLY
 // =====================================================
 
 const deleteOpportunity =
@@ -799,14 +911,17 @@ const deleteOpportunity =
       req,
       res
     ) => {
+
       const opportunity =
         await Opportunity.findById(
           req.params.id
         );
 
       if (
-        !opportunity
+        !opportunity ||
+        opportunity.isDeleted
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -814,28 +929,30 @@ const deleteOpportunity =
         );
       }
 
-      // Delete related applications
+      // ===============================================
+      // SOFT DELETE
+      // ===============================================
 
-      await Application.deleteMany({
-        opportunity:
-          opportunity._id,
-      });
+      opportunity.isDeleted =
+        true;
 
-      await opportunity.deleteOne();
+      opportunity.deletedAt =
+        new Date();
+
+      await opportunity.save();
 
       res.status(200).json({
         success:
           true,
 
         message:
-          "Opportunity and related applications deleted successfully.",
+          "Opportunity deleted successfully.",
       });
     }
   );
 
 // =====================================================
 // GET ALL EVENTS
-// ADMIN ONLY
 // =====================================================
 
 const getAllEvents =
@@ -844,6 +961,7 @@ const getAllEvents =
       req,
       res
     ) => {
+
       const {
         page,
         limit,
@@ -855,10 +973,16 @@ const getAllEvents =
 
       const filter = {};
 
+      // ===============================================
+      // STATUS FILTER
+      // ===============================================
+
       if (
         typeof req.query.status ===
-        "string"
+          "string" &&
+        req.query.status.trim()
       ) {
+
         filter.status =
           req.query.status
             .trim()
@@ -870,6 +994,7 @@ const getAllEvents =
         total,
       ] =
         await Promise.all([
+
           Event.find(
             filter
           )
@@ -916,7 +1041,6 @@ const getAllEvents =
 
 // =====================================================
 // DELETE EVENT
-// ADMIN ONLY
 // =====================================================
 
 const deleteEvent =
@@ -925,6 +1049,7 @@ const deleteEvent =
       req,
       res
     ) => {
+
       const event =
         await Event.findById(
           req.params.id
@@ -933,6 +1058,7 @@ const deleteEvent =
       if (
         !event
       ) {
+
         res.status(404);
 
         throw new Error(
@@ -957,25 +1083,25 @@ const deleteEvent =
 // =====================================================
 
 module.exports = {
+
+  // Dashboard
   getAdminDashboard,
 
+  // Users
   getAllUsers,
-
   getUserById,
-
   updateUserStatus,
-
   updateUserRole,
 
+  // Jobs
   getAllJobs,
-
   deleteJob,
 
+  // Opportunities
   getAllOpportunities,
-
   deleteOpportunity,
 
+  // Events
   getAllEvents,
-
   deleteEvent,
 };
