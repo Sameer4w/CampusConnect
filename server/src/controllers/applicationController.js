@@ -143,6 +143,7 @@ const applyToOpportunity =
           status:
             "open",
         });
+
       if (
         !opportunity
       ) {
@@ -223,8 +224,8 @@ const applyToOpportunity =
           );
       }
 
-      // If student does not send a resume URL,
-      // use the resume stored in their profile.
+      // Use student's profile resume
+      // if resumeUrl was not explicitly sent.
 
       if (
         !resumeUrl &&
@@ -274,11 +275,10 @@ const applyToOpportunity =
             status:
               "pending",
           });
+
       } catch (
         error
       ) {
-        // Handles duplicate applications
-        // even if two requests arrive together.
 
         if (
           error.code === 11000
@@ -305,13 +305,15 @@ const applyToOpportunity =
         {
           path:
             "student",
+
           select:
             "name email role",
         },
       ]);
 
       res.status(201).json({
-        success: true,
+        success:
+          true,
 
         message:
           "Application submitted successfully.",
@@ -409,7 +411,8 @@ const getMyApplications =
           );
 
       res.status(200).json({
-        success: true,
+        success:
+          true,
 
         applications,
 
@@ -470,7 +473,8 @@ const getMyApplicationById =
       }
 
       res.status(200).json({
-        success: true,
+        success:
+          true,
 
         application,
       });
@@ -575,12 +579,196 @@ const withdrawApplication =
       await application.save();
 
       res.status(200).json({
-        success: true,
+        success:
+          true,
 
         message:
           "Application withdrawn successfully.",
 
         application,
+      });
+    }
+  );
+
+// =====================================================
+// GET ALL APPLICATIONS FOR RECRUITER
+//
+// GET /api/applications/recruiter
+//
+// Returns all applications submitted to
+// opportunities created by the logged-in recruiter.
+//
+// RECRUITER ONLY
+// =====================================================
+
+const getRecruiterApplications =
+  asyncHandler(
+    async (
+      req,
+      res
+    ) => {
+
+      const {
+        status,
+        page = 1,
+        limit = 10,
+      } =
+        req.query;
+
+      // -----------------------------------------------
+      // FIND ALL RECRUITER OPPORTUNITIES
+      // -----------------------------------------------
+
+      const opportunities =
+        await Opportunity.find({
+          recruiter:
+            req.user._id,
+        }).select("_id");
+
+      const opportunityIds =
+        opportunities.map(
+          (opportunity) =>
+            opportunity._id
+        );
+
+      // -----------------------------------------------
+      // NO OPPORTUNITIES
+      // -----------------------------------------------
+
+      if (
+        opportunityIds.length === 0
+      ) {
+        return res.status(200).json({
+          success:
+            true,
+
+          applications:
+            [],
+
+          pagination: {
+            total:
+              0,
+
+            page:
+              Number(page) || 1,
+
+            limit:
+              Number(limit) || 10,
+
+            pages:
+              0,
+          },
+        });
+      }
+
+      // -----------------------------------------------
+      // BUILD QUERY
+      // -----------------------------------------------
+
+      const query = {
+        opportunity: {
+          $in:
+            opportunityIds,
+        },
+      };
+
+      // -----------------------------------------------
+      // STATUS FILTER
+      // -----------------------------------------------
+
+      if (
+        status &&
+        APPLICATION_STATUSES.includes(
+          status.toLowerCase()
+        )
+      ) {
+        query.status =
+          status.toLowerCase();
+      }
+
+      // -----------------------------------------------
+      // PAGINATION
+      // -----------------------------------------------
+
+      const currentPage =
+        Math.max(
+          1,
+          Number(page) || 1
+        );
+
+      const pageLimit =
+        Math.min(
+          50,
+          Math.max(
+            1,
+            Number(limit) || 10
+          )
+        );
+
+      const skip =
+        (currentPage - 1) *
+        pageLimit;
+
+      // -----------------------------------------------
+      // COUNT
+      // -----------------------------------------------
+
+      const total =
+        await Application.countDocuments(
+          query
+        );
+
+      // -----------------------------------------------
+      // GET APPLICATIONS
+      // -----------------------------------------------
+
+      const applications =
+        await Application.find(
+          query
+        )
+          .populate(
+            "student",
+            "name email role"
+          )
+          .populate(
+            "opportunity"
+          )
+          .sort({
+            createdAt:
+              -1,
+          })
+          .skip(
+            skip
+          )
+          .limit(
+            pageLimit
+          );
+
+      // -----------------------------------------------
+      // RESPONSE
+      // -----------------------------------------------
+
+      res.status(200).json({
+        success:
+          true,
+
+        applications,
+
+        pagination: {
+          total,
+
+          page:
+            currentPage,
+
+          limit:
+            pageLimit,
+
+          pages:
+            Math.ceil(
+              total /
+              pageLimit
+            ),
+        },
       });
     }
   );
@@ -673,10 +861,18 @@ const getApplicationsByOpportunity =
         (currentPage - 1) *
         pageLimit;
 
+      // -----------------------------------------------
+      // COUNT
+      // -----------------------------------------------
+
       const total =
         await Application.countDocuments(
           query
         );
+
+      // -----------------------------------------------
+      // GET APPLICATIONS
+      // -----------------------------------------------
 
       const applications =
         await Application.find(
@@ -684,7 +880,7 @@ const getApplicationsByOpportunity =
         )
           .populate(
             "student",
-            "name email"
+            "name email role"
           )
           .sort({
             createdAt:
@@ -698,7 +894,8 @@ const getApplicationsByOpportunity =
           );
 
       res.status(200).json({
-        success: true,
+        success:
+          true,
 
         opportunity,
 
@@ -892,12 +1089,17 @@ const updateApplicationStatus =
 
       await application.save();
 
+      // -----------------------------------------------
+      // POPULATE RESPONSE
+      // -----------------------------------------------
+
       await application.populate([
         {
           path:
             "student",
-            select:
-              "name email",
+
+          select:
+            "name email",
         },
         {
           path:
@@ -906,13 +1108,15 @@ const updateApplicationStatus =
         {
           path:
             "statusHistory.changedBy",
-            select:
-              "name email role",
+
+          select:
+            "name email role",
         },
       ]);
 
       res.status(200).json({
-        success: true,
+        success:
+          true,
 
         message:
           "Application status updated successfully.",
@@ -928,9 +1132,17 @@ const updateApplicationStatus =
 
 module.exports = {
   applyToOpportunity,
+
   getMyApplications,
+
   getMyApplicationById,
+
   withdrawApplication,
+
+  // New recruiter endpoint
+  getRecruiterApplications,
+
   getApplicationsByOpportunity,
+
   updateApplicationStatus,
 };

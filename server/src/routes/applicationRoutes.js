@@ -10,6 +10,9 @@ const {
   getMyApplications,
   getMyApplicationById,
   withdrawApplication,
+
+  // Recruiter
+  getRecruiterApplications,
   getApplicationsByOpportunity,
   updateApplicationStatus,
 } = require("../controllers/applicationController");
@@ -22,12 +25,8 @@ const router = express.Router();
 
 // -----------------------------------------------------
 // APPLY TO AN OPPORTUNITY
-// -----------------------------------------------------
-//
 // POST /api/applications
-//
-// Student only
-//
+// -----------------------------------------------------
 
 router.post(
   "/",
@@ -38,17 +37,8 @@ router.post(
 
 // -----------------------------------------------------
 // GET MY APPLICATIONS
-// -----------------------------------------------------
-//
 // GET /api/applications/my
-//
-// Student only
-//
-// Optional:
-// ?status=pending
-// ?page=1
-// ?limit=10
-//
+// -----------------------------------------------------
 
 router.get(
   "/my",
@@ -59,12 +49,8 @@ router.get(
 
 // -----------------------------------------------------
 // GET MY SINGLE APPLICATION
-// -----------------------------------------------------
-//
 // GET /api/applications/my/:id
-//
-// Student only
-//
+// -----------------------------------------------------
 
 router.get(
   "/my/:id",
@@ -75,12 +61,8 @@ router.get(
 
 // -----------------------------------------------------
 // WITHDRAW APPLICATION
-// -----------------------------------------------------
-//
 // PUT /api/applications/:id/withdraw
-//
-// Student owner only
-//
+// -----------------------------------------------------
 
 router.put(
   "/:id/withdraw",
@@ -94,18 +76,31 @@ router.put(
 // =====================================================
 
 // -----------------------------------------------------
-// GET APPLICATIONS FOR AN OPPORTUNITY
-// -----------------------------------------------------
+// GET ALL APPLICATIONS FOR RECRUITER
 //
-// GET /api/applications/opportunity/:opportunityId
+// GET /api/applications/recruiter
 //
-// Recruiter owner only
+// Returns applications from ALL opportunities
+// created by the currently logged-in recruiter.
 //
 // Optional:
 // ?status=pending
 // ?page=1
 // ?limit=10
+// -----------------------------------------------------
+
+router.get(
+  "/recruiter",
+  protect,
+  requireRole("recruiter"),
+  getRecruiterApplications
+);
+
+// -----------------------------------------------------
+// GET APPLICATIONS FOR ONE OPPORTUNITY
 //
+// GET /api/applications/opportunity/:opportunityId
+// -----------------------------------------------------
 
 router.get(
   "/opportunity/:opportunityId",
@@ -116,12 +111,9 @@ router.get(
 
 // -----------------------------------------------------
 // UPDATE APPLICATION STATUS
-// -----------------------------------------------------
 //
 // PUT /api/applications/:id/status
-//
-// Recruiter owner only
-//
+// -----------------------------------------------------
 
 router.put(
   "/:id/status",
