@@ -116,6 +116,7 @@ const getOrCreateProfile =
         await StudentProfile.create({
           user: userId,
           phone: "",
+          bio: "",
           education: [],
           skills: [],
           projects: [],
@@ -848,6 +849,7 @@ const uploadBufferToCloudinary =
         resolve,
         reject
       ) => {
+
         const cleanFileName =
           originalName
             .replace(
@@ -865,8 +867,7 @@ const uploadBufferToCloudinary =
         const uploadStream =
           cloudinary.uploader.upload_stream(
             {
-              resource_type:
-                "raw",
+              resource_type: "image",
 
               folder:
                 "campusconnect/resumes",
@@ -877,22 +878,24 @@ const uploadBufferToCloudinary =
               format:
                 "pdf",
             },
+
             (
               error,
               result
             ) => {
+
               if (error) {
                 reject(error);
                 return;
               }
 
               resolve(result);
+
             }
           );
 
-        uploadStream.end(
-          buffer
-        );
+        uploadStream.end(buffer);
+
       }
     );
   };
@@ -900,28 +903,32 @@ const uploadBufferToCloudinary =
 // =====================================================
 // CLOUDINARY DELETE HELPER
 // =====================================================
-
 const deleteFromCloudinary =
   async (publicId) => {
+
     if (!publicId) {
       return;
     }
 
     try {
+
       await cloudinary.uploader.destroy(
         publicId,
         {
           resource_type:
-            "raw",
+            "image",
         }
       );
 
     } catch (error) {
+
       console.error(
         "Failed to delete resume from Cloudinary:",
         error.message
       );
+
     }
+
   };
 
 // =====================================================
