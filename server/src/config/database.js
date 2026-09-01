@@ -1,46 +1,96 @@
-const mongoose = require('mongoose');
-const config = require('./index');
+const mongoose = require("mongoose");
+const config = require("./index");
+
+// =====================================================
+// CONNECT TO MONGODB
+// =====================================================
 
 const connectDB = async () => {
   try {
+    // =================================================
+    // CHECK MONGODB URI
+    // =================================================
+
     if (!config.mongodbUri) {
       throw new Error(
-        'MONGODB_URI is not set. Please set it in your .env file. ' +
-        'Example: MONGODB_URI=mongodb://127.0.0.1:27017/campusconnect'
+        "MONGODB_URI is not configured. Please add it to your .env file."
       );
     }
 
-    const conn = await mongoose.connect(config.mongodbUri, {
-      serverSelectionTimeoutMS: 5000,
-    });
+    // =================================================
+    // CONNECT
+    // =================================================
 
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    console.log(`Database:     ${conn.connection.name}\n`);
+    const connection = await mongoose.connect(
+      config.mongodbUri,
+      {
+        serverSelectionTimeoutMS: 10000,
+      }
+    );
 
-    mongoose.connection.on('error', (err) => {
-      console.error(`MongoDB connection error: ${err.message}`);
-    });
+    // =================================================
+    // SUCCESS LOGS
+    // =================================================
 
-    mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected');
-    });
+    console.log("\n========================================");
+    console.log("  MongoDB Connected Successfully");
+    console.log("========================================");
+    console.log(
+      `  Host: ${connection.connection.host}`
+    );
+    console.log(
+      `  Database: ${connection.connection.name}`
+    );
+    console.log("========================================\n");
 
-    return conn;
+    return connection;
   } catch (error) {
-    console.error('\n========================================');
-    console.error('  ❌ MongoDB Connection Failed');
-    console.error('========================================');
-    console.error(`  Error: ${error.message}`);
-    console.error('========================================');
-    console.error('  Troubleshooting:');
-    console.error('  1. Is MongoDB running locally?');
-    console.error('     - Run: mongod (or start MongoDB Compass)');
-    console.error('  2. Is MONGODB_URI correct in .env?');
-    console.error('     - Local:  mongodb://127.0.0.1:27017/campusconnect');
-    console.error('     - Atlas:  mongodb+srv://user:pass@cluster/...');
-    console.error('========================================\n');
-    process.exit(1);
+    console.error("\n========================================");
+    console.error("  MongoDB Connection Failed");
+    console.error("========================================");
+    console.error(
+      `  Error: ${error.message}`
+    );
+    console.error("========================================\n");
+
+    throw error;
   }
 };
+
+// =====================================================
+// MONGOOSE CONNECTION EVENTS
+// =====================================================
+
+mongoose.connection.on(
+  "error",
+  (error) => {
+    console.error(
+      "MongoDB runtime error:",
+      error.message
+    );
+  }
+);
+
+mongoose.connection.on(
+  "disconnected",
+  () => {
+    console.warn(
+      "MongoDB disconnected"
+    );
+  }
+);
+
+mongoose.connection.on(
+  "reconnected",
+  () => {
+    console.log(
+      "MongoDB reconnected successfully"
+    );
+  }
+);
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = connectDB;

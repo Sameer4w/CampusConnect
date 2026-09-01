@@ -4,17 +4,55 @@ const cookieParser = require("cookie-parser");
 
 const config = require("./config");
 
-// Routes
-const healthRoutes = require("./routes/healthRoutes");
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const testRoutes = require("./routes/testRoutes");
+// =====================================================
+// ROUTES
+// =====================================================
 
-// Error middleware
+const healthRoutes =
+  require("./routes/healthRoutes");
+
+const authRoutes =
+  require("./routes/authRoutes");
+
+const userRoutes =
+  require("./routes/userRoutes");
+
+const opportunityRoutes =
+  require("./routes/opportunityRoutes");
+
+const applicationRoutes =
+  require("./routes/applicationRoutes");
+
+const jobRoutes =
+  require("./routes/jobRoutes");
+
+const jobApplicationRoutes =
+  require("./routes/jobApplicationRoutes");
+
+const recommendationRoutes =
+  require("./routes/recommendationRoutes");
+
+const notificationRoutes =
+  require("./routes/notificationRoutes");
+
+const eventRoutes =
+  require("./routes/eventRoutes");
+
+const adminRoutes =
+  require("./routes/adminRoutes");
+
+// =====================================================
+// ERROR MIDDLEWARE
+// =====================================================
+
 const {
   notFound,
   errorHandler,
 } = require("./middleware/errorHandler");
+
+// =====================================================
+// CREATE EXPRESS APP
+// =====================================================
 
 const app = express();
 
@@ -22,10 +60,48 @@ const app = express();
 // CORS
 // =====================================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5000",
+  config.clientOrigin,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: config.clientOrigin,
+    origin: (origin, callback) => {
+      // Allow requests without an Origin header.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (
+        allowedOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error(
+          "Not allowed by CORS"
+        )
+      );
+    },
+
     credentials: true,
+
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
@@ -33,7 +109,9 @@ app.use(
 // REQUEST PARSING
 // =====================================================
 
-app.use(cookieParser());
+app.use(
+  cookieParser()
+);
 
 app.use(
   express.json({
@@ -52,86 +130,148 @@ app.use(
 // ROOT API INFORMATION
 // =====================================================
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Welcome to CampusConnect API",
+app.get(
+  "/",
+  (req, res) => {
+    res.status(200).json({
+      success: true,
 
-    endpoints: {
-      health: "GET /api/health",
+      message:
+        "CampusConnect API is running",
 
-      auth: {
-        register:
-          "POST /api/auth/register",
+      version:
+        "1.0.0",
 
-        login:
-          "POST /api/auth/login",
+      environment:
+        config.nodeEnv,
 
-        me:
-          "GET /api/auth/me",
+      timestamp:
+        new Date().toISOString(),
 
-        logout:
-          "POST /api/auth/logout",
-      },
+      api: {
+        health:
+          "/api/health",
 
-      studentProfile: {
-        get:
-          "GET /api/users/profile (student only)",
+        auth:
+          "/api/auth",
 
-        update:
-          "PUT /api/users/profile (student only)",
-      },
+        users:
+          "/api/users",
 
-      authorizationTests: {
-        student:
-          "GET /api/test/student (student/admin)",
+        opportunities:
+          "/api/opportunities",
 
-        recruiter:
-          "GET /api/test/recruiter (recruiter/admin)",
+        applications:
+          "/api/applications",
+
+        jobs:
+          "/api/jobs",
+
+        jobApplications:
+          "/api/job-applications",
+
+        recommendations:
+          "/api/recommendations",
+
+        notifications:
+          "/api/notifications",
+
+        events:
+          "/api/events",
 
         admin:
-          "GET /api/test/admin (admin only)",
+          "/api/admin",
       },
-    },
-  });
-});
+    });
+  }
+);
 
 // =====================================================
 // API ROUTES
 // =====================================================
 
-// Phase 1 — Health check
+// Health Check
 app.use(
   "/api/health",
   healthRoutes
 );
 
-// Phase 2 — Authentication
+// Authentication
 app.use(
   "/api/auth",
   authRoutes
 );
 
-// Phase 3 — Student profile
+// Users and Student Profile
 app.use(
   "/api/users",
   userRoutes
 );
 
-// Temporary role authorization tests
+// Opportunities
 app.use(
-  "/api/test",
-  testRoutes
+  "/api/opportunities",
+  opportunityRoutes
+);
+
+// Opportunity Applications
+app.use(
+  "/api/applications",
+  applicationRoutes
+);
+
+// Jobs
+app.use(
+  "/api/jobs",
+  jobRoutes
+);
+
+// Job Applications
+app.use(
+  "/api/job-applications",
+  jobApplicationRoutes
+);
+
+// Recommendations
+app.use(
+  "/api/recommendations",
+  recommendationRoutes
+);
+
+// Notifications
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+// Events
+app.use(
+  "/api/events",
+  eventRoutes
+);
+
+// Admin
+app.use(
+  "/api/admin",
+  adminRoutes
 );
 
 // =====================================================
 // ERROR HANDLING
 // =====================================================
 
-// 404 handler
-app.use(notFound);
+// 404 Handler
+app.use(
+  notFound
+);
 
-// Centralized error handler
-app.use(errorHandler);
+// Global Error Handler
+app.use(
+  errorHandler
+);
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = app;

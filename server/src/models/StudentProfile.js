@@ -294,12 +294,19 @@ const resumeSchema = new mongoose.Schema(
       trim: true,
       maxlength: [200, "Resume name cannot exceed 200 characters"],
     },
+
+    // Cloudinary identifier.
+    // Used to delete/replace the old resume safely.
+    publicId: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Cloudinary public ID cannot exceed 500 characters"],
+    },
   },
   {
     _id: false,
   }
 );
-
 // =====================================================
 // STUDENT PROFILE
 // =====================================================
@@ -326,6 +333,16 @@ const studentProfileSchema = new mongoose.Schema(
           !value || /^[+]?[\d\s().-]{7,20}$/.test(value),
         message: "Please provide a valid phone number",
       },
+    },
+
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [
+        500,
+        "Bio cannot exceed 500 characters",
+      ],
+      default: "",
     },
 
     education: {

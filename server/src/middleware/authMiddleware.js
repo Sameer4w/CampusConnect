@@ -1,79 +1,228 @@
-const jwt = require('jsonwebtoken');
-const asyncHandler = require('express-async-handler');
-const config = require('../config');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
+const asyncHandler = require("express-async-handler");
+
+const config = require("../config");
+const User = require("../models/User");
+
+// =====================================================
+// GENERATE JWT TOKEN
+// =====================================================
 
 const generateToken = (userId) => {
   if (!config.jwt.secret) {
-    throw new Error('JWT_SECRET is not configured. Please set it in your .env file.');
+    throw new Error(
+      "JWT_SECRET is not configured. Please set it in your .env file."
+    );
   }
 
   return jwt.sign(
-    { id: userId },
+    {
+      id: userId,
+    },
     config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn }
+    {
+      expiresIn:
+        config.jwt.expiresIn,
+    }
   );
 };
 
-const protect = asyncHandler(async (req, res, next) => {
-  let token;
+// =====================================================
+// EXTRACT TOKEN
+// =====================================================
+
+const getTokenFromRequest = (
+  req
+) => {
+  // -----------------------------------------------
+  // AUTHORIZATION HEADER
+  // -----------------------------------------------
+
+  const authorization =
+    req.headers.authorization;
 
   if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
+    authorization &&
+    authorization.startsWith(
+      "Bearer "
+    )
   ) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.jwt) {
-    token = req.cookies.jwt;
+    return authorization
+      .split(" ")[1];
   }
 
-  if (!token) {
-    res.status(401);
-    throw new Error('Not authorized - no token provided');
+  // -----------------------------------------------
+  // HTTP-ONLY COOKIE
+  // -----------------------------------------------
+
+  if (
+    req.cookies &&
+    req.cookies.jwt
+  ) {
+    return req.cookies.jwt;
   }
 
-  try {
-    if (!config.jwt.secret) {
-      res.status(500);
-      throw new Error('JWT_SECRET is not configured on the server');
-    }
-
-    const decoded = jwt.verify(token, config.jwt.secret);
-
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      res.status(401);
-      throw new Error('Not authorized - user not found');
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    res.status(401);
-    throw new Error('Not authorized - invalid or expired token');
-  }
-});
-
-const requireRole = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      res.status(401);
-      return next(new Error('Not authorized - user not authenticated'));
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      res.status(403);
-      return next(
-        new Error(
-          `Access denied - requires role: ${allowedRoles.join(', ')}. ` +
-          `Your role: ${req.user.role}`
-        )
-      );
-    }
-
-    next();
-  };
+  return null;
 };
+
+// =====================================================
+// PROTECT ROUTES
+// =====================================================
+
+const protect =
+  asyncHandler(
+    async (
+      req,
+      res,
+      next
+    ) => {
+      // ---------------------------------------------
+      // GET TOKEN
+      // ---------------------------------------------
+
+      const token =
+        getTokenFromRequest(
+          req
+        );
+
+      if (!token) {
+        res.status(401);
+
+        throw new Error(
+          "Not authorized. Please log in to continue."
+        );
+      }
+
+      // ---------------------------------------------
+      // JWT CONFIGURATION
+      // ---------------------------------------------
+
+      if (
+        !config.jwt.secret
+      ) {
+        res.status(500);
+
+        throw new Error(
+          "JWT_SECRET is not configured on the server"
+        );
+      }
+
+      // ---------------------------------------------
+      // VERIFY TOKEN
+      // ---------------------------------------------
+
+      let decoded;
+
+      try {
+        decoded =
+          jwt.verify(
+            token,
+            config.jwt.secret
+          );
+      } catch (
+        error
+      ) {
+        res.status(401);
+
+        throw new Error(
+          "Your session has expired or the token is invalid. Please log in again."
+        );
+      }
+
+      // ---------------------------------------------
+      // FIND USER
+      // ---------------------------------------------
+
+      const user =
+        await User.findById(
+          decoded.id
+        );
+
+      if (!user) {
+        res.status(401);
+
+        throw new Error(
+          "User account no longer exists"
+        );
+      }
+
+      // ---------------------------------------------
+      // CHECK ACCOUNT STATUS
+      // ---------------------------------------------
+
+      if (
+        !user.isActive
+      ) {
+        res.status(403);
+
+        throw new Error(
+          "Your account has been deactivated. Please contact an administrator."
+        );
+      }
+
+      // ---------------------------------------------
+      // ATTACH USER TO REQUEST
+      // ---------------------------------------------
+
+      req.user =
+        user;
+
+      next();
+    }
+  );
+
+// =====================================================
+// ROLE AUTHORIZATION
+// =====================================================
+
+const requireRole =
+  (...allowedRoles) => {
+    return (
+      req,
+      res,
+      next
+    ) => {
+      // ---------------------------------------------
+      // USER CHECK
+      // ---------------------------------------------
+
+      if (
+        !req.user
+      ) {
+        res.status(401);
+
+        return next(
+          new Error(
+            "Not authorized. Please log in to continue."
+          )
+        );
+      }
+
+      // ---------------------------------------------
+      // ROLE CHECK
+      // ---------------------------------------------
+
+      if (
+        !allowedRoles.includes(
+          req.user.role
+        )
+      ) {
+        res.status(403);
+
+        return next(
+          new Error(
+            "You do not have permission to access this resource"
+          )
+        );
+      }
+
+      next();
+    };
+  };
+
+// =====================================================
+// EXPORTS
+// =====================================================
 
 module.exports = {
   generateToken,

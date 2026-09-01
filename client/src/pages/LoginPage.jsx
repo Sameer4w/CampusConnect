@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import {
+  useState,
+  useEffect,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+
+import { useAuth } from "../context/AuthContext.jsx";
 
 function LoginPage() {
   const {
     login,
+    user,
     isAuthenticated,
     isLoading,
     error,
@@ -14,43 +24,120 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // =====================================================
+  // FORM STATE
+  // =====================================================
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
-  const [validationErrors, setValidationErrors] = useState({});
-  const [successMsg, setSuccessMsg] = useState('');
+  const [
+    validationErrors,
+    setValidationErrors,
+  ] = useState({});
 
-  // If the user was redirected to login from a protected page,
-  // send them back to that page after successful login.
-  const from = location.state?.from?.pathname || '/';
+  const [
+    successMsg,
+    setSuccessMsg,
+  ] = useState("");
+
+  // =====================================================
+  // CLEAR OLD AUTH ERRORS
+  // =====================================================
+
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   // =====================================================
   // REDIRECT AFTER LOGIN
   // =====================================================
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      navigate(from, { replace: true });
+    if (
+      isAuthenticated &&
+      user &&
+      !isLoading
+    ) {
+      // If user was redirected to login
+      // from a protected page, return there.
+      if (location.state?.from) {
+        navigate(
+          location.state.from,
+          {
+            replace: true,
+          }
+        );
+
+        return;
+      }
+
+      // Role-based default redirects
+      if (user.role === "admin") {
+        navigate(
+          "/admin",
+          {
+            replace: true,
+          }
+        );
+
+        return;
+      }
+
+      if (user.role === "recruiter") {
+        navigate(
+          "/dashboard",
+          {
+            replace: true,
+          }
+        );
+
+        return;
+      }
+
+      // Default student dashboard
+      navigate(
+        "/dashboard",
+        {
+          replace: true,
+        }
+      );
     }
-  }, [isAuthenticated, isLoading, navigate, from]);
+  }, [
+    isAuthenticated,
+    user,
+    isLoading,
+    navigate,
+    location.state,
+  ]);
 
   // =====================================================
   // REGISTRATION SUCCESS MESSAGE
   // =====================================================
 
   useEffect(() => {
-    if (location.state?.registered) {
-      setSuccessMsg('Registration successful! Please log in.');
+    if (
+      location.state?.registered
+    ) {
+      setSuccessMsg(
+        "Registration successful! Please log in."
+      );
 
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname
+      navigate(
+        location.pathname,
+        {
+          replace: true,
+          state: {},
+        }
       );
     }
-  }, [location.state]);
+  }, [
+    location.state,
+    location.pathname,
+    navigate,
+  ]);
 
   // =====================================================
   // FORM VALIDATION
@@ -59,40 +146,66 @@ function LoginPage() {
   const validate = () => {
     const errors = {};
 
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+    const email =
+      formData.email.trim();
+
+    if (!email) {
+      errors.email =
+        "Email is required";
+    } else if (
+      !/\S+@\S+\.\S+/.test(email)
+    ) {
+      errors.email =
+        "Invalid email format";
     }
 
     if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password =
+        "Password is required";
+    } else if (
+      formData.password.length < 6
+    ) {
+      errors.password =
+        "Password must be at least 6 characters";
     }
 
-    setValidationErrors(errors);
+    setValidationErrors(
+      errors
+    );
 
-    return Object.keys(errors).length === 0;
+    return (
+      Object.keys(errors).length === 0
+    );
   };
 
   // =====================================================
   // INPUT CHANGE
   // =====================================================
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (
+    event
+  ) => {
+    const {
+      name,
+      value,
+    } = event.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    );
 
-    if (validationErrors[name]) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
+    if (
+      validationErrors[name]
+    ) {
+      setValidationErrors(
+        (previous) => ({
+          ...previous,
+          [name]: undefined,
+        })
+      );
     }
 
     if (error) {
@@ -100,7 +213,7 @@ function LoginPage() {
     }
 
     if (successMsg) {
-      setSuccessMsg('');
+      setSuccessMsg("");
     }
   };
 
@@ -108,44 +221,78 @@ function LoginPage() {
   // LOGIN
   // =====================================================
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
 
     if (!validate()) {
       return;
     }
 
     try {
-      await login(formData);
+      await login({
+        email:
+          formData.email
+            .trim()
+            .toLowerCase(),
 
-      // Navigation happens automatically through useEffect
-      // when isAuthenticated becomes true.
-    } catch (err) {
-      // Error message is already handled by AuthContext.
+        password:
+          formData.password,
+      });
+
+    } catch {
+      // Error is handled by AuthContext
     }
   };
 
+  // =====================================================
+  // PAGE
+  // =====================================================
+
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <span className="auth-logo">🎓</span>
 
-          <h1>Welcome Back</h1>
+      <div className="auth-card">
+
+        <div className="auth-header">
+
+          <span
+            className="auth-logo"
+            aria-hidden="true"
+          >
+            🎓
+          </span>
+
+          <h1>
+            Welcome Back
+          </h1>
 
           <p>
-            Sign in to access your CampusConnect account
+            Sign in to access your
+            CampusConnect account
           </p>
+
         </div>
 
         {successMsg && (
-          <div className="alert alert-success">
+          <div
+            className="alert alert-success"
+            role="status"
+          >
             {successMsg}
           </div>
         )}
 
         {error && (
-          <div className="alert alert-error">
+          <div
+            className="alert alert-error"
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -155,9 +302,11 @@ function LoginPage() {
           className="auth-form"
           noValidate
         >
+
           {/* EMAIL */}
 
           <div className="form-group">
+
             <label htmlFor="email">
               Email Address
             </label>
@@ -171,23 +320,40 @@ function LoginPage() {
               value={formData.email}
               onChange={handleChange}
               disabled={isLoading}
+              maxLength={254}
+              aria-invalid={
+                Boolean(
+                  validationErrors.email
+                )
+              }
+              aria-describedby={
+                validationErrors.email
+                  ? "email-error"
+                  : undefined
+              }
               className={
                 validationErrors.email
-                  ? 'input-error'
-                  : ''
+                  ? "input-error"
+                  : ""
               }
             />
 
             {validationErrors.email && (
-              <span className="field-error">
+              <span
+                id="email-error"
+                className="field-error"
+                role="alert"
+              >
                 {validationErrors.email}
               </span>
             )}
+
           </div>
 
           {/* PASSWORD */}
 
           <div className="form-group">
+
             <label htmlFor="password">
               Password
             </label>
@@ -201,18 +367,33 @@ function LoginPage() {
               value={formData.password}
               onChange={handleChange}
               disabled={isLoading}
+              aria-invalid={
+                Boolean(
+                  validationErrors.password
+                )
+              }
+              aria-describedby={
+                validationErrors.password
+                  ? "password-error"
+                  : undefined
+              }
               className={
                 validationErrors.password
-                  ? 'input-error'
-                  : ''
+                  ? "input-error"
+                  : ""
               }
             />
 
             {validationErrors.password && (
-              <span className="field-error">
+              <span
+                id="password-error"
+                className="field-error"
+                role="alert"
+              >
                 {validationErrors.password}
               </span>
             )}
+
           </div>
 
           {/* SUBMIT */}
@@ -228,14 +409,17 @@ function LoginPage() {
                 Signing In...
               </>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
+
         </form>
 
         <div className="auth-footer">
+
           <p>
-            Don't have an account?{' '}
+            Don't have an account?{" "}
+
             <Link
               to="/register"
               className="auth-link"
@@ -243,8 +427,11 @@ function LoginPage() {
               Create one
             </Link>
           </p>
+
         </div>
+
       </div>
+
     </div>
   );
 }

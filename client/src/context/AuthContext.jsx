@@ -18,13 +18,46 @@ const USER_KEY = 'campusconnect_user';
 
 const AuthContext = createContext(null);
 
+// =====================================================
+// SAFE LOCAL STORAGE HELPERS
+// =====================================================
+
+const getStoredUser = () => {
+  try {
+    const storedUser = localStorage.getItem(USER_KEY);
+
+    return storedUser
+      ? JSON.parse(storedUser)
+      : null;
+  } catch {
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
+};
+
+const getStoredToken = () => {
+  return (
+    localStorage.getItem(TOKEN_KEY) || null
+  );
+};
+
+// =====================================================
+// INITIAL STATE
+// =====================================================
+
+const initialToken = getStoredToken();
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem(USER_KEY) || 'null'),
-  token: localStorage.getItem(TOKEN_KEY) || null,
-  isAuthenticated: !!localStorage.getItem(TOKEN_KEY),
-  isLoading: !!localStorage.getItem(TOKEN_KEY),
+  user: getStoredUser(),
+  token: initialToken,
+  isAuthenticated: !!initialToken,
+  isLoading: !!initialToken,
   error: null,
 };
+
+// =====================================================
+// REDUCER
+// =====================================================
 
 function authReducer(state, action) {
   switch (action.type) {
@@ -76,17 +109,47 @@ function authReducer(state, action) {
   }
 }
 
-export function AuthProvider({ children }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+// =====================================================
+// AUTH PROVIDER
+// =====================================================
 
-  const persistAuth = useCallback((user, token) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  }, []);
+export function AuthProvider({ children }) {
+  const [state, dispatch] = useReducer(
+    authReducer,
+    initialState
+  );
+
+  // =====================================================
+  // PERSIST AUTH
+  // =====================================================
+
+  const persistAuth = useCallback(
+    (user, token) => {
+      localStorage.setItem(
+        TOKEN_KEY,
+        token
+      );
+
+      localStorage.setItem(
+        USER_KEY,
+        JSON.stringify(user)
+      );
+    },
+    []
+  );
+
+  // =====================================================
+  // CLEAR AUTH
+  // =====================================================
 
   const clearAuth = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(
+      TOKEN_KEY
+    );
+
+    localStorage.removeItem(
+      USER_KEY
+    );
   }, []);
 
   // =====================================================
@@ -95,12 +158,18 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(
     async (userData) => {
-      dispatch({ type: 'AUTH_START' });
+      dispatch({
+        type: 'AUTH_START',
+      });
 
       try {
-        const data = await registerApi(userData);
+        const data =
+          await registerApi(userData);
 
-        persistAuth(data.user, data.token);
+        persistAuth(
+          data.user,
+          data.token
+        );
 
         dispatch({
           type: 'AUTH_SUCCESS',
@@ -127,7 +196,10 @@ export function AuthProvider({ children }) {
         throw new Error(message);
       }
     },
-    [persistAuth, clearAuth]
+    [
+      persistAuth,
+      clearAuth,
+    ]
   );
 
   // =====================================================
@@ -136,12 +208,18 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     async (credentials) => {
-      dispatch({ type: 'AUTH_START' });
+      dispatch({
+        type: 'AUTH_START',
+      });
 
       try {
-        const data = await loginApi(credentials);
+        const data =
+          await loginApi(credentials);
 
-        persistAuth(data.user, data.token);
+        persistAuth(
+          data.user,
+          data.token
+        );
 
         dispatch({
           type: 'AUTH_SUCCESS',
@@ -168,78 +246,118 @@ export function AuthProvider({ children }) {
         throw new Error(message);
       }
     },
-    [persistAuth, clearAuth]
+    [
+      persistAuth,
+      clearAuth,
+    ]
   );
 
   // =====================================================
   // LOGOUT
   // =====================================================
 
-  const logout = useCallback(async () => {
-    try {
-      await logoutApi();
-    } catch (error) {
-      // Even if the backend logout request fails,
-      // clear authentication from the frontend.
-    }
+  const logout = useCallback(
+    async () => {
+      try {
+        await logoutApi();
+      } catch {
+        // Even if backend logout fails,
+        // always clear frontend authentication.
+      } finally {
+        clearAuth();
 
-    clearAuth();
-    dispatch({ type: 'LOGOUT' });
-  }, [clearAuth]);
+        dispatch({
+          type: 'LOGOUT',
+        });
+      }
+    },
+    [clearAuth]
+  );
 
   // =====================================================
   // FETCH / VERIFY CURRENT USER
   // =====================================================
 
-  const fetchCurrentUser = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
+  const fetchCurrentUser = useCallback(
+    async () => {
+      const token =
+        getStoredToken();
 
-    if (!token) {
-      clearAuth();
-      dispatch({ type: 'LOGOUT' });
-      return null;
-    }
+      if (!token) {
+        clearAuth();
 
-    try {
-      const data = await getCurrentUser();
+        dispatch({
+          type: 'LOGOUT',
+        });
 
-      persistAuth(data.user, token);
+        return null;
+      }
 
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: {
-          user: data.user,
-          token,
-        },
-      });
+      try {
+        const data =
+          await getCurrentUser();
 
-      return data.user;
-    } catch (error) {
-      clearAuth();
-      dispatch({ type: 'LOGOUT' });
-      return null;
-    }
-  }, [persistAuth, clearAuth]);
+        if (!data?.user) {
+          throw new Error(
+            'User data not found'
+          );
+        }
+
+        persistAuth(
+          data.user,
+          token
+        );
+
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            user: data.user,
+            token,
+          },
+        });
+
+        return data.user;
+      } catch {
+        clearAuth();
+
+        dispatch({
+          type: 'LOGOUT',
+        });
+
+        return null;
+      }
+    },
+    [
+      persistAuth,
+      clearAuth,
+    ]
+  );
 
   // =====================================================
   // RESTORE AUTHENTICATION ON APP LOAD
   // =====================================================
 
   useEffect(() => {
-    if (state.token) {
-      fetchCurrentUser();
-    } else {
-      dispatch({ type: 'LOGOUT' });
-    }
-  }, [state.token, fetchCurrentUser]);
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
+
+  // =====================================================
+  // CONTEXT VALUE
+  // =====================================================
 
   const value = {
     ...state,
+
     register,
     login,
     logout,
+
     fetchCurrentUser,
-    clearError: () => dispatch({ type: 'CLEAR_ERROR' }),
+
+    clearError: () =>
+      dispatch({
+        type: 'CLEAR_ERROR',
+      }),
   };
 
   return (
@@ -249,11 +367,18 @@ export function AuthProvider({ children }) {
   );
 }
 
+// =====================================================
+// AUTH HOOK
+// =====================================================
+
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error(
+      'useAuth must be used within an AuthProvider'
+    );
   }
 
   return context;
